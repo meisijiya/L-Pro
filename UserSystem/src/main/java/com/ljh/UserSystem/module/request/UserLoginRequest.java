@@ -1,0 +1,17 @@
+package com.ljh.UserSystem.module.request;
+
+import lombok.Data;
+
+import java.io.Serial;
+import java.io.Serializable;
+
+@Data
+public class UserLoginRequest implements Serializable {
+    @Serial
+    private static final long serialVersionUID= 4678386638538841403L;
+
+    private String username;
+
+    private String password;
+
+}

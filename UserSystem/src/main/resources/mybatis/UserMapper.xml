@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ljh.UserSystem.mapper.UserMapper">
+
+    <resultMap id="BaseResultMap" type="com.ljh.UserSystem.module.domain.User">
+            <id property="id" column="id" />
+            <result property="username" column="username" />
+            <result property="password" column="password" />
+            <result property="user_account" column="user_account" />
+            <result property="avatar_url" column="avatar_url" />
+            <result property="gender" column="gender" />
+            <result property="profile" column="profile" />
+            <result property="phone" column="phone" />
+            <result property="email" column="email" />
+            <result property="status" column="status" />
+            <result property="role" column="role" />
+            <result property="friend_ids" column="friend_ids" />
+            <result property="tags" column="tags" />
+            <result property="create_time" column="create_time" />
+            <result property="update_time" column="update_time" />
+            <result property="is_delete" column="is_delete" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,username,password,user_account,avatar_url,gender,
+        profile,phone,email,status,role,
+        friend_ids,tags,create_time,update_time,is_delete
+    </sql>
+</mapper>
