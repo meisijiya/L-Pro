@@ -70,25 +70,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 用户不存在
         if (user == null) {
             log.info("用户登录失败，查询数据库为空");
-            throw new BusinessException(ErrorCode.PARAMS_ERROR,"用户不存在","用户没在数据库||用户已注销");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"用户不存在","用户没在数据库||用户已注销||密码错误");
         }
         // 3. 用户脱敏
         User safetyUser = getSafetyUser(user);
         // 4. 记录用户的登录态
 
-//        // 查看当前Session信息
-//        HttpSession session = request.getSession();
-//        System.out.println("Session ID: " + session.getId());
-//        System.out.println("Session创建时间: " + new Date(session.getCreationTime()));
-//        System.out.println("最后访问时间: " + new Date(session.getLastAccessedTime()));
-//
-//        // 查看Session中的属性
-//        Enumeration<String> attributeNames = session.getAttributeNames();
-//        while (attributeNames.hasMoreElements()) {
-//            String attributeName = attributeNames.nextElement();
-//            Object attributeValue = session.getAttribute(attributeName);
-//            System.out.println("Attribute: " + attributeName + " = " + attributeValue);
-//        }
 
         request.getSession().setAttribute(USER_LOGIN_STATE, safetyUser);
         // 注册Session到全局映射

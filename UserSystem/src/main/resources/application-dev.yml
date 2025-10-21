@@ -4,3 +4,19 @@ spring:
     url: jdbc:mysql://localhost:3306/usersystem?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowMultiQueries=true
     username: root
     password: 123456
+################ 接口文档 ###############
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: UserSystem
+      paths-to-match: /**  # 匹配所有路径
+      packages-to-scan: com.ljh.UserSystem.controller  # 扫描控制器包
+
+# Swagger 的 增强配置，不需要增强可以不配
+knife4j:
+  enable: false #注意
+  setting:
+    language: zh_cn

@@ -7,7 +7,6 @@ import com.ljh.UserSystem.common.ResultUtils;
 
 import com.ljh.UserSystem.exception.BusinessException;
 import com.ljh.UserSystem.module.domain.User;
-import com.ljh.UserSystem.module.request.DeleteRequest;
 import com.ljh.UserSystem.module.request.UserLoginRequest;
 import com.ljh.UserSystem.module.request.UserRegisterRequest;
 import com.ljh.UserSystem.service.UserService;
@@ -20,17 +19,17 @@ import static com.ljh.UserSystem.constant.UserConstant.ADMIN_ROLE;
 import static com.ljh.UserSystem.constant.UserConstant.USER_LOGIN_STATE;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/user")
 public class UserController {
     @Resource
     private UserService userService;
     @PostMapping("/login")
-    public BaseResponse<User> login(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+    public BaseResponse<User> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
         //判断传入的值是否为空
         if(userLoginRequest == null){
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
-        String userAccount = userLoginRequest.getUsername();
+        String userAccount = userLoginRequest.getUserAccount();
         String userPassword = userLoginRequest.getPassword();
         if(StringUtils.isAnyBlank(userAccount,userPassword)){
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
@@ -44,7 +43,7 @@ public class UserController {
         if(userLoginRequest == null){
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
-        String userAccount = userLoginRequest.getUsername();
+        String userAccount = userLoginRequest.getUserAccount();
         String userPassword = userLoginRequest.getPassword();
         String checkPassword = userLoginRequest.getCheckPassword();
         if(StringUtils.isAnyBlank(userAccount,userPassword,checkPassword)){
@@ -83,7 +82,7 @@ public class UserController {
     }
 
     @GetMapping("/delete")
-    public BaseResponse<Integer> delete(@RequestParam(required = false)String userAccount, HttpServletRequest request) {
+    public BaseResponse<Integer> userDelete(@RequestParam(required = false)String userAccount, HttpServletRequest request) {
         //如果没有传入删除参数，则默认注销自己
         if(userAccount== null){
             return ResultUtils.success(userService.delete(userAccount,request), "注销成功");
@@ -98,15 +97,15 @@ public class UserController {
     }
 
     @PostMapping("/update")
-    public BaseResponse<Integer> update(@RequestBody User user, HttpServletRequest request) {
+    public BaseResponse<Integer> userUpdate(@RequestBody User user, HttpServletRequest request) {
         return ResultUtils.success(userService.update(user,request), "用户信息更新成功");
     }
 
     /**
      * 是否为管理员
      *
-     * @param request
-     * @return
+     * @param request HttpServletRequest
+     * @return  boolean
      */
     private boolean isAdmin(HttpServletRequest request) {
         // 仅管理员可查询

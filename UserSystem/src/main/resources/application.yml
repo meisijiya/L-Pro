@@ -3,10 +3,9 @@ spring:
     name: UserSystem
   profiles:
     active: dev
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
-#      - org.redisson.spring.starter.RedissonAutoConfigurationV2
+#  autoconfigure:
+#    exclude:
+
 
 server:
   servlet:
@@ -17,25 +16,3 @@ server:
         http-only: true
         secure: false
 
-# springdoc-openapi项目配置
-springdoc:
-  default-flat-param-object: true  # 平展参数
-  swagger-ui:
-    path: /swagger-ui.html
-    tags-sorter: alpha
-    operations-sorter: alpha
-  api-docs:
-    path: /v3/api-docs
-  group-configs:
-    - group: 'default'
-      paths-to-match: '/**'
-      packages-to-scan: com.ljh.UserSystem.controller
-
-# knife4j的增强配置
-knife4j:
-  enable: true
-  production: false
-  basic:
-    enable: false
-  setting:
-    language: zh_cn
