@@ -1,14 +1,12 @@
 package com.ljh.UserSystem.config;
 
 import com.ljh.UserSystem.config.Interceptor.LoginInterceptor;
-import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class MvcConfig implements WebMvcConfigurer {
+public class InterceptorConfig implements WebMvcConfigurer {
 //    @Resource
 //    private StringRedisTemplate stringRedisTemplate;
 

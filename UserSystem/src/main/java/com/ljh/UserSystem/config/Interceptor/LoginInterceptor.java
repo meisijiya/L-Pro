@@ -34,8 +34,9 @@ public class LoginInterceptor implements HandlerInterceptor {
         UserDTO userDTO = BeanUtil.copyProperties(user, UserDTO.class);
         UserHolder.saveUser(userDTO);
         //打印
-        System.out.println("线程"+UserHolder.getUser().getId());
+        System.out.println("拦截器：线程"+UserHolder.getUser().getId());
         //6.放行
         return true;
     }
+
 }

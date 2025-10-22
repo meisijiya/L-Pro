@@ -1,15 +1,20 @@
 package com.ljh.UserSystem.service.impl;
 
+import cn.hutool.Hutool;
+import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ljh.UserSystem.common.ErrorCode;
 import com.ljh.UserSystem.exception.BusinessException;
 import com.ljh.UserSystem.module.domain.User;
+import com.ljh.UserSystem.module.dto.UserDTO;
 import com.ljh.UserSystem.module.request.DeleteRequest;
 import com.ljh.UserSystem.service.UserService;
 import com.ljh.UserSystem.mapper.UserMapper;
+import com.ljh.UserSystem.utils.UserHolder;
 import jakarta.annotation.Resource;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,6 +29,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.ljh.UserSystem.constant.PWConstant.SALT;
 import static com.ljh.UserSystem.constant.UserConstant.*;
@@ -41,7 +47,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private UserMapper userMapper;
 
     @Override
-    public User userLogin(String userAccount, String userPassword, HttpServletRequest request) {
+    public UserDTO userLogin(String userAccount, String userPassword, HttpServletRequest request) {
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名或密码为空");
@@ -73,11 +79,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"用户不存在","用户没在数据库||用户已注销||密码错误");
         }
         // 3. 用户脱敏
-        User safetyUser = getSafetyUser(user);
+        UserDTO userDTO =BeanUtil.copyProperties(user, UserDTO.class);
         // 4. 记录用户的登录态
+        request.getSession().setAttribute(USER_LOGIN_STATE, userDTO);
 
+        // 注册该请求的用户Session到全局映射
+        registerUserToSessions(userAccount, request);
 
-        request.getSession().setAttribute(USER_LOGIN_STATE, safetyUser);
+        return userDTO;
+    }
+
+    private void registerUserToSessions(String userAccount, HttpServletRequest request) {
         // 注册Session到全局映射
         ServletContext context = request.getServletContext();
         if (context.getAttribute("userSessions") == null) {
@@ -86,11 +98,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         @SuppressWarnings("unchecked")
         Map<String, HttpSession> userSessions = (Map<String, HttpSession>) context.getAttribute("userSessions");
         userSessions.put(userAccount, request.getSession());
-
         //打印Session管理器中的Session信息
         log.info("Session管理器中的Session信息：{}", userSessions);
-
-        return safetyUser;
     }
 
 
@@ -122,30 +131,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return hasUpperCase && hasLowerCase && hasSpecialChar;
     }
 
-    /**
-     * 用户脱敏
-     *
-     * @param originUser
-     * @return
-     */
-    @Override
-    public User getSafetyUser(User originUser) {
-        if (originUser == null) {
-            return null;
-        }
-        User safetyUser = new User();
-        safetyUser.setId(originUser.getId());
-        safetyUser.setUsername(originUser.getUsername());
-        safetyUser.setUser_account(originUser.getUser_account());
-        safetyUser.setAvatar_url(originUser.getAvatar_url());
-        safetyUser.setGender(originUser.getGender());
-        safetyUser.setPhone(originUser.getPhone());
-        safetyUser.setEmail(originUser.getEmail());
-        safetyUser.setRole(originUser.getRole());
-        safetyUser.setStatus(originUser.getStatus());
-        safetyUser.setCreate_time(originUser.getCreate_time());
-        return safetyUser;
-    }
 
     @Override
     public Long userRegister(String userAccount, String userPassword, String checkPassword) {
@@ -193,69 +178,66 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public boolean userLogout(HttpServletRequest request) {
-        // 获取Session中获取用户数据
-        HttpSession session = request.getSession();
-        Object user = session.getAttribute(USER_LOGIN_STATE);
-        boolean isLogin= (user!= null);
-        // 判断用户是否登录
-        if (!isLogin) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户未登录");
-        }
-        // 移除登录态
-        session.removeAttribute(USER_LOGIN_STATE);
+        request.getSession().invalidate();
         return true;
     }
 
     @Override
-    public User getCurrentUser(HttpServletRequest request) {
-        // 获取Session中获取用户数据
-        HttpSession session = request.getSession();
-        Object user = session.getAttribute(USER_LOGIN_STATE);
-        boolean isLogin= user!= null;
-        // 判断用户是否登录
-        if (!isLogin) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户未登录");
-        }
-        return (User) user;
+    public UserDTO getCurrentUser(HttpServletRequest request) {
+        // 通过线程获取Session中获取用户数据
+        return UserHolder.getUser();
     }
 
     @Override
-    public Page<User> getUserList(String userAccount, long current, long size) {
+    public Page<UserDTO> getUserList(String userAccount, long current, long size) {
+        //Page<T> 的泛型类型必须与数据库实体类对应
         Page<User> page = new Page<>(current, size);
-        if (StringUtils.isBlank(userAccount)) {  // 使用 StringUtils.isBlank 更严谨
-            return this.page(page);
-        }
+        Page<User> resultPage;
+        Page<UserDTO> dtoPage = new Page<>(current, size);
+
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.like("user_account", userAccount.trim());  // trim 去除首尾空格
-        return this.page(page, queryWrapper);
+        queryWrapper.like("user_account", userAccount.trim());// trim 去除首尾空格
+        resultPage=this.page(page, queryWrapper);
+        ToDTO(resultPage, dtoPage);
+        return dtoPage;
+    }
+
+    private void ToDTO(Page<User> page, Page<UserDTO> dtoPage) {
+        Page<User> resultPage;
+        resultPage=this.page(page);
+        // 再转换为 UserDTO
+        // 复制分页信息
+        dtoPage.setRecords(resultPage.getRecords().stream()
+                .map(user -> BeanUtil.copyProperties(user, UserDTO.class))
+                .collect(Collectors.toList()));
+        dtoPage.setTotal(resultPage.getTotal());
+        dtoPage.setSize(resultPage.getSize());
+        dtoPage.setCurrent(resultPage.getCurrent());
     }
 
     @Override
-    public int delete(String userAccount, HttpServletRequest request) {
-        // 在一个全局可访问的地方存储Session映射
-        ServletContext context = request.getServletContext();
-        if (context.getAttribute("userSessions") == null) {
-            context.setAttribute("userSessions", new ConcurrentHashMap<String, HttpSession>());
-        }
-        @SuppressWarnings("unchecked")
-        Map<String, HttpSession> userSessions = (Map<String, HttpSession>) context.getAttribute("userSessions");
-        HttpSession session ;
+    public int userDelete(String userAccount, HttpServletRequest request) {
         //注销自己
         if(userAccount == null){
-            session = request.getSession();
-            Object object_user=session.getAttribute(USER_LOGIN_STATE);
+            //获取用户id，如何逻辑删除用户
+            long userId = UserHolder.getUser().getId();
+            //登出并销毁Session
             userLogout(request);
-            User user=(User) object_user;
-            long userId=user.getId();
             UpdateWrapper<User> updateWrapper=new UpdateWrapper<>();
             updateWrapper.eq("id",userId)
                             .set("is_delete",USER_DELETE);
             return userMapper.update(updateWrapper);
-        }else {;
+        }else {
+            // 获取Session管理器中的Session信息
+            ServletContext context = request.getServletContext();
+            @SuppressWarnings("unchecked")
+            Map<String, HttpSession> userSessions =
+                    (Map<String, HttpSession>) context.getAttribute("userSessions");
             // 获取特定用户的Session
             HttpSession targetSession = userSessions.get(userAccount);
             if (targetSession != null) {
-                targetSession.removeAttribute(USER_LOGIN_STATE);
+                // 销毁Session
+                targetSession.invalidate();
             }
             //打印Session管理器中的Session信息
             log.info("Session管理器中的Session信息：{}", userSessions);
@@ -268,13 +250,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public int update(User user, HttpServletRequest request) {
-        Object attribute = request.getSession().getAttribute(USER_LOGIN_STATE);
-        User userLogin = (User) attribute;
+    public int userInfoUpdate(UserDTO user, HttpServletRequest request) {
         //将有值的字段更新
         UpdateWrapper<User> updateWrapper = new UpdateWrapper<>();
-        updateWrapper.eq("id", userLogin.getId());
-
+        updateWrapper.eq("id", UserHolder.getUser().getId());
         setIfNotNull(updateWrapper, "username", user.getUsername());
         setIfNotNull(updateWrapper, "gender", user.getGender());
         setIfNotNull(updateWrapper, "phone", user.getPhone());
@@ -286,6 +265,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if(updated ==0){
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "更新失败，数据库错误");
         }
+        //更新成功后，也要Session中保存数据
+        User selectById = userMapper.selectById(UserHolder.getUser().getId());
+        HttpSession session = request.getSession();
+        session.setAttribute(USER_LOGIN_STATE, selectById);
         return updated;
     }
 

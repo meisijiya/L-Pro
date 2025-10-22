@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ljh.UserSystem.common.BaseResponse;
 import com.ljh.UserSystem.module.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.ljh.UserSystem.module.dto.UserDTO;
 import com.ljh.UserSystem.module.request.DeleteRequest;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -15,20 +16,19 @@ import jakarta.servlet.http.HttpServletRequest;
 public interface UserService extends IService<User> {
 
 
-    User userLogin(String userAccount, String userPassword, HttpServletRequest request);
+    UserDTO userLogin(String userAccount, String userPassword, HttpServletRequest request);
 
-    User getSafetyUser(User originUser);
 
     Long userRegister(String userAccount, String userPassword, String checkPassword);
 
     boolean userLogout(HttpServletRequest request);
 
-    User getCurrentUser(HttpServletRequest request);
+    UserDTO getCurrentUser(HttpServletRequest request);
 
-    Page<User> getUserList(String userAccount,long current, long size);
+    Page<UserDTO> getUserList(String userAccount,long current, long size);
 
-    int delete(String userAccount, HttpServletRequest request);
+    int userDelete(String userAccount, HttpServletRequest request);
 
 
-    int update(User user, HttpServletRequest request);
+    int userInfoUpdate(UserDTO user, HttpServletRequest request);
 }

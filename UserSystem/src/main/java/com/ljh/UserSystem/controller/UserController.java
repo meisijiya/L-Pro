@@ -7,9 +7,11 @@ import com.ljh.UserSystem.common.ResultUtils;
 
 import com.ljh.UserSystem.exception.BusinessException;
 import com.ljh.UserSystem.module.domain.User;
+import com.ljh.UserSystem.module.dto.UserDTO;
 import com.ljh.UserSystem.module.request.UserLoginRequest;
 import com.ljh.UserSystem.module.request.UserRegisterRequest;
 import com.ljh.UserSystem.service.UserService;
+import com.ljh.UserSystem.utils.UserHolder;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
@@ -24,7 +26,7 @@ public class UserController {
     @Resource
     private UserService userService;
     @PostMapping("/login")
-    public BaseResponse<User> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+    public BaseResponse<UserDTO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
         //判断传入的值是否为空
         if(userLoginRequest == null){
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
@@ -63,17 +65,19 @@ public class UserController {
     }
 
     @GetMapping("/current")
-    public BaseResponse<User> getCurrentUser(HttpServletRequest request) {
-        User currentUser = userService.getCurrentUser(request);
-        return ResultUtils.success(currentUser, "获取当前用户成功");
+    public BaseResponse<UserDTO> getCurrentUser(HttpServletRequest request) {
+        return ResultUtils.success(userService.getCurrentUser(request), "获取当前用户成功");
     }
 
     @GetMapping("/userList")
-    public BaseResponse<Page<User>> getUserList(
+    public BaseResponse<Page<UserDTO>> getUserList(
             @RequestParam(required = false) String userAccount,
             @RequestParam(defaultValue = "1")long current,
             @RequestParam(defaultValue = "10") long size,
             HttpServletRequest request) {
+        if (userAccount==null){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,ErrorCode.PARAMS_ERROR.getMessage(),"请输入用户名");
+        }
         //判断是否为管理员
         if(!isAdmin(request)){
             throw new BusinessException(ErrorCode.NO_AUTH,ErrorCode.NO_AUTH.getMessage(),"管理员才能操作");
@@ -85,20 +89,20 @@ public class UserController {
     public BaseResponse<Integer> userDelete(@RequestParam(required = false)String userAccount, HttpServletRequest request) {
         //如果没有传入删除参数，则默认注销自己
         if(userAccount== null){
-            return ResultUtils.success(userService.delete(userAccount,request), "注销成功");
+            return ResultUtils.success(userService.userDelete(userAccount,request), "注销成功");
         }else {
             if(!isAdmin(request)){
                 throw new BusinessException(ErrorCode.NO_AUTH,ErrorCode.NO_AUTH.getMessage(),"管理员才能删除其他用户");
             }else {
-                return ResultUtils.success(userService.delete(userAccount,request), "删除成功");
+                return ResultUtils.success(userService.userDelete(userAccount,request), "删除成功");
             }
         }
 
     }
 
-    @PostMapping("/update")
-    public BaseResponse<Integer> userUpdate(@RequestBody User user, HttpServletRequest request) {
-        return ResultUtils.success(userService.update(user,request), "用户信息更新成功");
+    @PostMapping("/infoUpdate")
+    public BaseResponse<Integer> userInfoUpdate(@RequestBody UserDTO user, HttpServletRequest request) {
+        return ResultUtils.success(userService.userInfoUpdate(user,request), "用户信息更新成功");
     }
 
     /**
@@ -109,8 +113,7 @@ public class UserController {
      */
     private boolean isAdmin(HttpServletRequest request) {
         // 仅管理员可查询
-        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
-        User user = (User) userObj;
+        UserDTO user = UserHolder.getUser();
         return user != null && user.getRole() == ADMIN_ROLE;
     }
 }

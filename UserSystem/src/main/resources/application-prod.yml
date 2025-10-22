@@ -1,0 +1,3 @@
+app:
+  cors:
+    allowed-origins: "https://yourdomain.com" #改！！
