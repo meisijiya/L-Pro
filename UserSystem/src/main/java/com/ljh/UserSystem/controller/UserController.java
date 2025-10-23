@@ -118,10 +118,11 @@ public class UserController {
     public BaseResponse<Page<UserDTO>> getUserList(
             @RequestParam(required = false) String userAccount,
             @RequestParam(defaultValue = "1")long current,
-            @RequestParam(defaultValue = "10") long size,
+            @RequestParam(defaultValue = "3") long size,
             HttpServletRequest request) {
         if (userAccount==null){
-            throw new BusinessException(ErrorCode.PARAMS_ERROR,ErrorCode.PARAMS_ERROR.getMessage(),"请输入用户名");
+            //查全部人
+            return ResultUtils.success(userService.getUserList(null,current,size), "获取用户列表成功");
         }
         //判断是否为管理员
         if(!isAdmin(request)){
@@ -145,6 +146,7 @@ public class UserController {
 
     }
 
+    //@RequestBody UserDTO user改成@RequestBody RequestUpdateUser updateUser
     @PostMapping("/infoUpdate")
     public BaseResponse<Integer> userInfoUpdate(@RequestBody UserDTO user, HttpServletRequest request) {
         return ResultUtils.success(userService.userInfoUpdate(user,request), "用户信息更新成功");

@@ -20,7 +20,7 @@ public class InterceptorConfig implements WebMvcConfigurer {
                         "/user/register",
                         "/user/sendEmail/**",
                         "/swagger-ui/**",
-                        "/swagger-ui/**",
+                        "/swagger-resources/**",
                         "/v3/api-docs/**",
                         "/doc.html/**"
                 ).order(1);

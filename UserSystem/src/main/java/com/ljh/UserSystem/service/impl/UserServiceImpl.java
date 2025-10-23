@@ -206,10 +206,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         Page<User> page = new Page<>(current, size);
         Page<User> resultPage;
         Page<UserDTO> dtoPage = new Page<>(current, size);
-
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.like("user_account", userAccount.trim());// trim 去除首尾空格
-        resultPage=this.page(page, queryWrapper);
+        if(userAccount == null){
+            resultPage=this.page(page);
+        }else {
+            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+            queryWrapper.like("user_account", userAccount.trim());// trim 去除首尾空格
+            resultPage = this.page(page, queryWrapper);
+        }
         ToDTO(resultPage, dtoPage);
         return dtoPage;
     }

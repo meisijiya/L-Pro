@@ -20,7 +20,8 @@ public class LoginInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         //打印请求url
-        System.out.println(request.getRequestURI());
+        System.out.println("Request URI: " + request.getRequestURI());
+        System.out.println("Context Path: " + request.getContextPath());
         //1.获取session
         HttpSession session = request.getSession();
         //2.获取session中的用户
