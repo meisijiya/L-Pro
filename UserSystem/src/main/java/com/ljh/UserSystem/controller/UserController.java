@@ -1,6 +1,7 @@
 package com.ljh.UserSystem.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ljh.UserSystem.annotation.CostTime;
 import com.ljh.UserSystem.common.BaseResponse;
 import com.ljh.UserSystem.common.ErrorCode;
 import com.ljh.UserSystem.common.ResultUtils;
@@ -11,12 +12,15 @@ import com.ljh.UserSystem.module.dto.UserDTO;
 import com.ljh.UserSystem.module.request.UserLoginRequest;
 import com.ljh.UserSystem.module.request.UserRegisterRequest;
 import com.ljh.UserSystem.service.UserService;
+import com.ljh.UserSystem.utils.MailMsg;
 import com.ljh.UserSystem.utils.UserHolder;
 import jakarta.annotation.Resource;
+import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import static cn.dev33.satoken.SaManager.log;
 import static com.ljh.UserSystem.constant.UserConstant.ADMIN_ROLE;
 import static com.ljh.UserSystem.constant.UserConstant.USER_LOGIN_STATE;
 
@@ -25,6 +29,10 @@ import static com.ljh.UserSystem.constant.UserConstant.USER_LOGIN_STATE;
 public class UserController {
     @Resource
     private UserService userService;
+
+    @Resource
+    private MailMsg mailMsg;
+
     @PostMapping("/login")
     public BaseResponse<UserDTO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
         //判断传入的值是否为空
@@ -39,8 +47,24 @@ public class UserController {
         return ResultUtils.success(userService.userLogin(userAccount,userPassword,request));
     }
 
+//    @PostMapping("/register")
+//    public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userLoginRequest) {
+//        //判断传入的值是否为空
+//        if(userLoginRequest == null){
+//            return ResultUtils.error(ErrorCode.PARAMS_ERROR);
+//        }
+//        String userAccount = userLoginRequest.getUserAccount();
+//        String userPassword = userLoginRequest.getPassword();
+//        String checkPassword = userLoginRequest.getCheckPassword();
+//        if(StringUtils.isAnyBlank(userAccount,userPassword,checkPassword)){
+//            return ResultUtils.error(ErrorCode.PARAMS_ERROR);
+//        }
+//        //返回用户id
+//        return ResultUtils.success(userService.userRegister(userAccount,userPassword,checkPassword), "用户注册成功");
+//    }
+
     @PostMapping("/register")
-    public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userLoginRequest) {
+    public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userLoginRequest,HttpServletRequest request) {
         //判断传入的值是否为空
         if(userLoginRequest == null){
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
@@ -48,12 +72,33 @@ public class UserController {
         String userAccount = userLoginRequest.getUserAccount();
         String userPassword = userLoginRequest.getPassword();
         String checkPassword = userLoginRequest.getCheckPassword();
-        if(StringUtils.isAnyBlank(userAccount,userPassword,checkPassword)){
+        String email = userLoginRequest.getEmail();
+        String code = userLoginRequest.getCode();
+        if(StringUtils.isAnyBlank(userAccount,userPassword,checkPassword, email, code)){
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
         //返回用户id
-        return ResultUtils.success(userService.userRegister(userAccount,userPassword,checkPassword), "用户注册成功");
+        return ResultUtils.success(userService.userRegister(userAccount,userPassword,checkPassword,email,code, request), "用户注册成功");
     }
+
+    @GetMapping("/sendEmail/{email}")
+    @CostTime //aop自定义注解，监控接口执行时间
+    public BaseResponse<String> sendCode(@PathVariable String email,HttpServletRequest request) throws MessagingException {
+        log.info("邮箱码：{}",email);
+//        //从redis中取出验证码信息
+//        String code = redisTemplate.opsForValue().get(email);
+        //从Session中取出验证码信息
+        String code = (String) request.getSession().getAttribute("code");
+        if (!StringUtils.isEmpty(code)) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,ErrorCode.OPERATION_ERROR.getMessage(),"验证码已发送，请勿重复发送");
+        }
+        boolean b = mailMsg.mail(email, request);
+        if (b) {
+            return ResultUtils.success( "验证码发送成功");
+        }
+        throw new BusinessException(ErrorCode.PARAMS_ERROR,ErrorCode.PARAMS_ERROR.getMessage(),"邮箱不正确或为空！");
+        }
+
 
     @PostMapping("/logout")
     public BaseResponse<Boolean> userLogout(HttpServletRequest request) {

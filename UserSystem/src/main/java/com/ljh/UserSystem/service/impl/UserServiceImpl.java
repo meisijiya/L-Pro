@@ -31,6 +31,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.ljh.UserSystem.constant.EmailConstant.EMAIL_CODE;
 import static com.ljh.UserSystem.constant.PWConstant.SALT;
 import static com.ljh.UserSystem.constant.UserConstant.*;
 
@@ -133,7 +134,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
 
     @Override
-    public Long userRegister(String userAccount, String userPassword, String checkPassword) {
+    public Long userRegister(String userAccount, String userPassword, String checkPassword,String email,String code,HttpServletRequest request) {
+        String emailCode = (String) request.getSession().getAttribute(EMAIL_CODE);
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名或密码为空");
@@ -147,6 +149,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         if(!checkPassword.equals(userPassword)){
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码不一致");
+        }
+        if(StringUtils.isAnyBlank(email,code)){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "邮箱或验证码为空");
+        }
+        if(!email.contains("@")){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "邮箱格式错误");
+        }
+        if(!code.equals(emailCode)){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码错误");
         }
         // 账户不能包含特殊字符
         String validPattern = "[`~!@#$%^&*()+=|{}':;',\\\\[\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]";
@@ -169,6 +180,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User NewUser = new User();
         NewUser.setUser_account(userAccount);
         NewUser.setPassword(encryptPassword);
+        NewUser.setEmail(email);
         boolean saveResult = this.save(NewUser);
         if (!saveResult) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");

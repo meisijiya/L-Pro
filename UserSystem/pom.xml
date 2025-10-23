@@ -195,6 +195,12 @@
             <artifactId>hibernate-validator</artifactId>
         </dependency>
 
+<!--        Spring Boot邮件发送功能-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

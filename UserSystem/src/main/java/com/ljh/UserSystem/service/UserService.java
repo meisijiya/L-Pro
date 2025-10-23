@@ -19,7 +19,7 @@ public interface UserService extends IService<User> {
     UserDTO userLogin(String userAccount, String userPassword, HttpServletRequest request);
 
 
-    Long userRegister(String userAccount, String userPassword, String checkPassword);
+    Long userRegister(String userAccount, String userPassword, String checkPassword, String email,String  code,HttpServletRequest request);
 
     boolean userLogout(HttpServletRequest request);
 
